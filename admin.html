@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线点餐</title>
+    <meta name="description" content="在线点餐">
+    <meta name="keywords" content="在线点餐">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition">
+<div id="app">
+    <div class="content-header">
+        <h1>在线点餐<small>用户信息</small></h1>
+        <el-breadcrumb separator-class="el-icon-arrow-right" class="breadcrumb">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>用户列表</el-breadcrumb-item>
+            <el-breadcrumb-item>用户信息</el-breadcrumb-item>
+        </el-breadcrumb>
+    </div>
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <el-input placeholder="用户名称" v-model="pagination.queryString" style="width: 200px;" class="filter-item"></el-input>
+                <el-button @click="findPage()" class="dalfBut">查询</el-button>
+                <el-button type="primary" class="butT" @click="handleCreate()">新建</el-button>
+            </div>
+            <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
+                <el-table-column type="index" align="center" label="序号"></el-table-column>
+
+                <el-table-column prop="username" label="用户名称" align="center"></el-table-column>
+                <el-table-column prop="password" label="用户密码" align="center"></el-table-column>
+                <el-table-column prop="role" label="身份" align="center"></el-table-column>
+                <el-table-column label="操作" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+                        <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-size="pagination.pageSize"
+                        layout="total, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+            <!-- 新增标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="新添用户" :visible.sync="dialogFormVisible">
+                    <!-- 被校验的表单必须有这个属性 ref -->
+                    <el-form ref="dataAddForm" :model="formData"  label-position="right" label-width="100px">
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="用户名称" >
+                                    <el-input v-model="formData.username"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="密码" >
+                                    <el-input v-model="formData.password"></el-input>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="身份" prop="role">
+                                    <el-select v-model="formData.role">
+                                        <el-option label="admin" value="1"></el-option>
+                                        <el-option label="customer" value="2"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible = false">取消</el-button>
+                        <el-button type="primary" @click="handleAdd()">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+
+            <!-- 编辑标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="编辑信息" :visible.sync="dialogFormVisible4Edit">
+                    <el-form ref="dataEditForm" :model="formData" :rules="rules" label-position="right" label-width="100px">
+                        <el-row>
+
+                            <el-col :span="12">
+                                <el-form-item label="用户名称" prop="name">
+                                    <el-input v-model="formData.username"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+
+                            <el-col :span="12">
+                                <el-form-item label="用户密码" prop="remark">
+                                    <el-input v-model="formData.password"/>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+
+                            <el-col :span="12">
+                                <el-form-item label="用户身份" prop="role">
+                                    <el-select v-model="formData.role">
+                                        <el-option label="admin" value="1"></el-option>
+                                        <el-option label="customer" value="2"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible4Edit = false">取消</el-button>
+                        <el-button type="primary" @click="handleEdit()">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data:{
+            pagination: {//分页相关模型数据
+                currentPage: 1,//当前页码
+                pageSize:10,//每页显示的记录数
+                total:0,//总记录数
+                queryString:null//查询条件
+            },
+            dataList: [],//当前页要展示的分页列表数据
+            formData: {},//表单数据
+            dialogFormVisible: false,//增加表单是否可见
+            dialogFormVisible4Edit:false,//编辑表单是否可见
+
+        },
+        //钩子函数，VUE对象初始化完成后自动执行
+        created() {
+            //分页展示方法被调用
+            this.findPage();
+        },
+        methods: {
+            //编辑检查项
+            handleEdit() {
+                this.$refs['dataEditForm'].validate((valid) => {
+                    if (valid) {
+                        console.log(this.formData)
+                        axios.post('/users/saveItem', this.formData)
+                            .then((resp) => {
+                                if (resp.data.flag) {
+                                    this.$message({
+                                        type: 'success',
+                                        message: '编辑成功'
+                                    });
+                                }
+                                this.dialogFormVisible4Edit = false;
+                                this.findPage()
+                            })
+                            .catch((error) => {
+                                this.$message({
+                                    type: 'error',
+                                    message: '编辑失败!'
+                                });
+                            });
+                    } else {
+                        this.$message({
+                            type: 'error',
+                            message: '失败!'
+                        });
+                        return false;
+                    }
+                })
+            },
+            //添加检查项
+            handleAdd () {
+                //新增数据方法
+                this.$refs['dataAddForm'].validate((valid) => {
+                    if (valid) {
+                        axios.post('/users/saveItem', this.formData)
+                            .then((resp) => {
+                                if (resp.data.flag) {
+                                    this.$message({
+                                        type: 'success',
+                                        message: '添加成功'
+                                    });
+                                }
+                                this.dialogFormVisible = false;
+                                this.findPage()
+                            })
+                            .catch((error) => {
+                                this.$message({
+                                    type: 'error',
+                                    message: '添加失败!'
+                                });
+                            });
+                    } else {
+                        this.$message({
+                            type: 'error',
+                            message: '失败!'
+                        });
+                        return false;
+                    }
+                })
+            },
+            //分页查询 axios分页展示数据
+            findPage() {
+                //第几页 展示几条数据 是否输入查询条件
+                var queryBean = {
+                    currentPage: this.pagination.currentPage,
+                    pageSize: this.pagination.pageSize,
+                    queryString: this.pagination.queryString
+                }
+                axios.post('/users/findPage',queryBean)
+                    .then((resp)=>{
+                        this.dataList = resp.data.rows;
+                        this.pagination.total = resp.data.total;
+                    })
+                    .catch((error)=>{
+                        //
+                        this.$message({
+                            type: 'error',
+                            message: '请求失败!'
+                        });
+                    })
+            },
+            //重置表单
+            resetForm() {
+
+            },
+            //弹出添加窗口
+            handleCreate() {
+                //清空窗口
+                this.formData = {};
+                //弹出窗口
+                this.dialogFormVisible = true;//显示窗口
+            },
+            //弹出编辑窗口
+            handleUpdate(row) {
+                this.dialogFormVisible4Edit = true;
+                this.formData = row;
+            },
+            //切换页码显示分页信息
+            handleCurrentChange(currentPage){
+                //更换页码
+                this.pagination.currentPage = currentPage;
+                //使用更新后的页码查询
+                this.findPage();
+            },
+            // 删除检查项
+            handleDelete(row){
+                //按照主键删除
+                this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //删除异步请求
+                    axios.post('/users/deleteById?id='+row.userid)
+                        .then((resp)=>{
+                            if(resp.data.flag){
+                                this.$message({
+                                    type: 'success',
+                                    message: '删除成功！'
+                                });
+                            }
+                            //刷新当前页面
+                            this.findPage();
+                        })
+                        .catch((error)=>{
+                            this.$message({
+                                type: 'error',
+                                message: '删除失败!'
+                            });
+                        });
+
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            }
+        }
+    })
+</script>
+</html>

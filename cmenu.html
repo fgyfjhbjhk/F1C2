@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>在线点餐</title>
+    <meta name="description" content="在线点餐">
+    <meta name="keywords" content="在线点餐">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition">
+<div id="app">
+    <div class="content-header">
+        <h1>在线点餐<small>菜单信息</small></h1>
+        <el-breadcrumb separator-class="el-icon-arrow-right" class="breadcrumb">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>菜单列表</el-breadcrumb-item>
+            <el-breadcrumb-item>菜单信息</el-breadcrumb-item>
+        </el-breadcrumb>
+    </div>
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <el-input placeholder="菜品名称" v-model="pagination.queryString" style="width: 200px;" class="filter-item"></el-input>
+                <el-button @click="findPage()" class="dalfBut">查询</el-button>
+                <el-button type="primary" class="butT" @click="handleCreate()">点餐</el-button>
+            </div>
+            <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
+                <el-table-column prop="dishid" label="菜品编号" align="center"></el-table-column>
+                <el-table-column prop="dishname" label="菜品" align="center"></el-table-column>
+                <el-table-column prop="price" label="价格" align="center"></el-table-column>
+                <el-table-column prop="description" label="描述" align="center"></el-table-column>
+<!--                <el-table-column label="操作" align="center">-->
+<!--                    <template slot-scope="scope">-->
+
+<!--                        <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>-->
+<!--                    </template>-->
+<!--                </el-table-column>-->
+            </el-table>
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-size="pagination.pageSize"
+                        layout="total, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+            <!-- 新增标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="新添订单" :visible.sync="dialogFormVisible">
+                    <!-- 被校验的表单必须有这个属性 ref -->
+                    <el-form ref="dataAddForm" :model="formData"  label-position="right" label-width="100px">
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="顾客编号" >
+                                    <el-input v-model="formData.customerid"></el-input>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-form-item label="用餐时间">
+                            <el-col :span="11">
+                                <el-date-picker type="date" placeholder="选择日期" v-model="formData.orderdate" style="width: 100%;"></el-date-picker>
+                            </el-col>
+                            <el-col class="line" :span="2">-</el-col>
+                            <el-col :span="11">
+                                <el-time-picker placeholder="选择时间" v-model="formData.orderdate" style="width: 100%;"></el-time-picker>
+                            </el-col>
+                        </el-form-item>
+
+
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="菜品编号" >
+                                    <el-input v-model="formData.menuid"></el-input>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="12">
+                                <el-form-item label="取餐码" >
+                                    <el-input v-model="formData.password"></el-input>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="dialogFormVisible = false">取消</el-button>
+                        <el-button type="primary" @click="handleAdd()">确定</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+<!-- 引入组件库 -->
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data:{
+            pagination: {//分页相关模型数据
+                currentPage: 1,//当前页码
+                pageSize:10,//每页显示的记录数
+                total:0,//总记录数
+                queryString:null//查询条件
+            },
+            dataList: [],//当前页要展示的分页列表数据
+            formData: {},//表单数据
+            dialogFormVisible: false,//增加表单是否可见
+            dialogFormVisible4Edit:false,//编辑表单是否可见
+
+        },
+        //钩子函数，VUE对象初始化完成后自动执行
+        created() {
+            //分页展示方法被调用
+            this.findPage();
+        },
+        methods: {
+
+            //添加检查项
+            handleAdd () {
+                //新增数据方法
+                this.$refs['dataAddForm'].validate((valid) => {
+                    if (valid) {
+                        axios.post('/orders/saveItem', this.formData)
+                            .then((resp) => {
+                                if (resp.data.flag) {
+                                    this.$message({
+                                        type: 'success',
+                                        message: '添加成功'
+                                    });
+                                }
+                                this.dialogFormVisible = false;
+                                this.findPage()
+                            })
+                            .catch((error) => {
+                                this.$message({
+                                    type: 'error',
+                                    message: '添加失败!'
+                                });
+                            });
+                    } else {
+                        this.$message({
+                            type: 'error',
+                            message: '失败!'
+                        });
+                        return false;
+                    }
+                })
+
+            },
+            //分页查询 axios分页展示数据
+            findPage() {
+                //第几页 展示几条数据 是否输入查询条件
+                var queryBean = {
+                    currentPage: this.pagination.currentPage,
+                    pageSize: this.pagination.pageSize,
+                    queryString: this.pagination.queryString
+                }
+                axios.post('/menu/findPage',queryBean)
+                    .then((resp)=>{
+                        this.dataList = resp.data.rows;
+                        this.pagination.total = resp.data.total;
+                    })
+                    .catch((error)=>{
+                        //
+                        this.$message({
+                            type: 'error',
+                            message: '请求失败!'
+                        });
+                    })
+            },
+            //重置表单
+            resetForm() {
+
+            },
+            // 弹出添加窗口
+            handleCreate() {
+                //清空窗口
+                this.formData = {};
+                //弹出窗口
+                this.dialogFormVisible = true;//显示窗口
+            },
+
+            //切换页码显示分页信息
+            handleCurrentChange(currentPage){
+                //更换页码
+                this.pagination.currentPage = currentPage;
+                //使用更新后的页码查询
+                this.findPage();
+            },
+
+        }
+    })
+</script>
+</html>
